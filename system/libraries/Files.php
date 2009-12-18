@@ -59,7 +59,7 @@ class Files
 		if (!is_object(self::$objInstance))
 		{
 			// Use FTP to modify files
-			if (($GLOBALS['TL_CONFIG']['useFTP'] && strlen($GLOBALS['TL_CONFIG']['ftpHost']) && strlen($GLOBALS['TL_CONFIG']['ftpUser']) && strlen($GLOBALS['TL_CONFIG']['ftpPass'])) || strlen($GLOBALS['TL_CONFIG']['useSMHClass']))
+			if ($GLOBALS['TL_CONFIG']['useFTP'] && ((strlen($GLOBALS['TL_CONFIG']['ftpHost']) && strlen($GLOBALS['TL_CONFIG']['ftpUser']) && strlen($GLOBALS['TL_CONFIG']['ftpPass'])) || strlen($GLOBALS['TL_CONFIG']['useSMHClass'])))
 			{
 				// allow "custom" SMH handlers to register themselves.
 				if($GLOBALS['TL_CONFIG']['useSMHClass'])
@@ -74,6 +74,8 @@ class Files
 						// Login
 						if (ftp_login($resConnection, $GLOBALS['TL_CONFIG']['ftpUser'], $GLOBALS['TL_CONFIG']['ftpPass']))
 						{
+							// Passive mode
+							ftp_pasv($resConnection, true);
 							self::$objInstance = new FTP($resConnection);
 							return self::$objInstance;
 						}
