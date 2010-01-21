@@ -18,6 +18,6 @@
  * @filesource
  */
 
-$GLOBALS['TL_SMH']['SFTP'] = 'SMHSFTP';
+$GLOBALS['TL_LANG']['MOD']['smhextended']       = array('Extended SafeModeHack', 'Extended SafeModeHack');  
 
 ?>

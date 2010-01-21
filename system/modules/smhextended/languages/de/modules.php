@@ -18,7 +18,6 @@
  * @filesource
  */
 
-$GLOBALS['TL_LANG']['tl_settings']['useSMHClass'] = array('Zu verwendende SafeModeHack Technologie', 'Wählen Sie bitte die zu verwendende Technologie aus.');
-$GLOBALS['TL_LANG']['tl_settings']['ftpPort'] = array('SafeMode Hack Port', 'Wählen Sie bitte die Port nummer aus, die verwendet werden soll oder lassen Sie dieses Feld leer um den Standardport zu verwenden (Achtung, der TYPOlight interne FTP unterstützt diese Option nicht).');
+$GLOBALS['TL_LANG']['MOD']['smhextended']       = array('Extended SafeModeHack', 'Extended SafeModeHack');  
 
 ?>
