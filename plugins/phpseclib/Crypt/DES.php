@@ -53,7 +53,7 @@
  * @author     Jim Wigginton <terrafrost@php.net>
  * @copyright  MMVII Jim Wigginton
  * @license    http://www.gnu.org/licenses/lgpl.txt
- * @version    $Id: DES.php,v 1.8 2009/05/27 16:15:23 terrafrost Exp $
+ * @version    $Id: DES.php,v 1.11 2010/01/04 07:59:01 terrafrost Exp $
  * @link       http://phpseclib.sourceforge.net
  */
 
@@ -391,6 +391,7 @@ class Crypt_DES {
                 break;
             case CRYPT_DES_MODE_CBC:
                 $xor = $this->decryptIV;
+
                 for ($i = 0; $i < strlen($ciphertext); $i+=8) {
                     $block = substr($ciphertext, $i, 8);
                     $plaintext.= $this->_processBlock($block, CRYPT_DES_DECRYPT) ^ $xor;
@@ -523,7 +524,8 @@ class Crypt_DES {
     /**
      * Unpads a string
      *
-     * If padding is enabled and the reported padding length exceeds the block size, padding will be, hence forth, disabled.
+     * If padding is enabled and the reported padding length is invalid the encryption key will be assumed to be wrong
+     * and false will be returned.
      *
      * @see Crypt_DES::_pad()
      * @access private
@@ -536,10 +538,8 @@ class Crypt_DES {
 
         $length = ord($text[strlen($text) - 1]);
 
-        if ($length > 8) {
-            user_error("The number of bytes reported as being padded ($length) exceeds the block size (8)", E_USER_NOTICE);
-            $this->padding = false;
-            return $text;
+        if (!$length || $length > 8) {
+            return false;
         }
 
         return substr($text, 0, -$length);
@@ -614,6 +614,8 @@ class Crypt_DES {
             )
         );
 
+        $keys = $this->keys;
+
         $temp = unpack('Na/Nb', $block);
         $block = array($temp['a'], $temp['b']);
 
@@ -668,14 +670,14 @@ class Crypt_DES {
         for ($i = 0; $i < 16; $i++) {
             // start of "the Feistel (F) function" - see the following URL:
             // http://en.wikipedia.org/wiki/Image:Data_Encryption_Standard_InfoBox_Diagram.png
-            $temp = (($sbox[0][((($block[1] >> 27) & 0x1F) | (($block[1] & 1) << 5)) ^ $this->keys[$mode][$i][0]]) << 28)
-                  | (($sbox[1][(($block[1] & 0x1F800000) >> 23) ^ $this->keys[$mode][$i][1]]) << 24)
-                  | (($sbox[2][(($block[1] & 0x01F80000) >> 19) ^ $this->keys[$mode][$i][2]]) << 20)
-                  | (($sbox[3][(($block[1] & 0x001F8000) >> 15) ^ $this->keys[$mode][$i][3]]) << 16)
-                  | (($sbox[4][(($block[1] & 0x0001F800) >> 11) ^ $this->keys[$mode][$i][4]]) << 12)
-                  | (($sbox[5][(($block[1] & 0x00001F80) >>  7) ^ $this->keys[$mode][$i][5]]) <<  8)
-                  | (($sbox[6][(($block[1] & 0x000001F8) >>  3) ^ $this->keys[$mode][$i][6]]) <<  4)
-                  | ( $sbox[7][((($block[1] & 0x1F) << 1) | (($block[1] >> 31) & 1)) ^ $this->keys[$mode][$i][7]]);
+            $temp = (($sbox[0][((($block[1] >> 27) & 0x1F) | (($block[1] & 1) << 5)) ^ $keys[$mode][$i][0]]) << 28)
+                  | (($sbox[1][(($block[1] & 0x1F800000) >> 23) ^ $keys[$mode][$i][1]]) << 24)
+                  | (($sbox[2][(($block[1] & 0x01F80000) >> 19) ^ $keys[$mode][$i][2]]) << 20)
+                  | (($sbox[3][(($block[1] & 0x001F8000) >> 15) ^ $keys[$mode][$i][3]]) << 16)
+                  | (($sbox[4][(($block[1] & 0x0001F800) >> 11) ^ $keys[$mode][$i][4]]) << 12)
+                  | (($sbox[5][(($block[1] & 0x00001F80) >>  7) ^ $keys[$mode][$i][5]]) <<  8)
+                  | (($sbox[6][(($block[1] & 0x000001F8) >>  3) ^ $keys[$mode][$i][6]]) <<  4)
+                  | ( $sbox[7][((($block[1] & 0x1F) << 1) | (($block[1] >> 31) & 1)) ^ $keys[$mode][$i][7]]);
 
             $msb = ($temp >> 31) & 1;
             $temp &= 0x7FFFFFFF;

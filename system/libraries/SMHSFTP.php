@@ -29,18 +29,37 @@
 
 class SMHSFTP extends SMHTransfer
 {
+	/**
+	 * Server connection
+	 * @var object
+	 */
+	protected $resConnection=NULL;
+
+	protected $ftpHost=NULL;
+	protected $ftpPort=NULL;
+	protected $ftpUser=NULL;
+	protected $ftpPass=NULL;
+	protected $ftpPath=NULL;
+
 	public function getLog()
 	{
 		return $this->resConnection->getSFTPLog();
 	}
 	
-	protected function connect()
+	public function connect()
 	{
 		// we have to mangle the include path a little to find our plugins
 		$oldIncludePath=get_include_path();
 		set_include_path($oldIncludePath . ':' . TL_ROOT . '/plugins/phpseclib/:' . TL_ROOT . '/plugins/phpseclib/Net');
 		include('SFTP.php');
 		set_include_path($oldIncludePath);
+
+		$this->ftpHost = $GLOBALS['TL_CONFIG']['ftpHost'];
+		$this->ftpPort = $GLOBALS['TL_CONFIG']['ftpPort'];
+		$this->ftpUser = $GLOBALS['TL_CONFIG']['ftpUser'];
+		$this->ftpPass = $GLOBALS['TL_CONFIG']['ftpPass'];
+		$this->ftpPath = $GLOBALS['TL_CONFIG']['ftpPath'];
+
 		// Connect to FTP server
 		if(!is_numeric($this->ftpPort) || $this->ftpPort==0)
 			$this->ftpPort = 22;
@@ -53,16 +72,20 @@ class SMHSFTP extends SMHTransfer
 			{
 				throw new Exception('Could not login to sftp: ' . $resConnection->getLog());
 			}
+			// security, clean user id and password as we won't need them anymore.
+			$this->ftpUser = NULL;
+			$this->ftpPass = NULL;
 
 			// change to root directory to ensure we can really work.
 			$resConnection->chdir($this->ftpPath);
+			$this->resConnection = $resConnection;
 			return $resConnection;
 		} else {
-			throw new Exception('Could not connect to ftp.');
+			throw new Exception('Could not connect to sftp.');
 		}
 	}
 	
-	protected function disconnect()
+	public function disconnect()
 	{
 		$this->resConnection->_disconnect(NET_SSH2_DISCONNECT_BY_APPLICATION);
 	}
@@ -183,6 +206,9 @@ class SMHSFTP extends SMHTransfer
 			return false;
 		if(is_file(TL_ROOT . '/' . $strSource))
 		{
+			// we have to delete the target file if it exists as sftp does not support truncating of files, only appending.
+			if(file_exists(TL_ROOT . '/' . $strDestination))
+				$this->delete($strDestination);
 			$return = $this->resConnection->put($this->ftpPath . $strDestination, TL_ROOT . '/' . $strSource, NET_SFTP_LOCAL_FILE);
 		} else {
 			// do we have to copy recurively in here?

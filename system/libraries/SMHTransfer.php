@@ -27,75 +27,22 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @package    Library
  */
-class SMHTransfer extends Files
+class SMHTransfer
 {
-	/**
-	 * Server connection
-	 * @var resource
-	 */
-	var $resConnection=NULL;
-	var $ftpHost=NULL;
-	var $ftpPort=NULL;
-	var $ftpUser=NULL;
-	var $ftpPass=NULL;
-	var $ftpPath=NULL;
-
 	/**
 	 * Files array
 	 * @var array
 	 */
 	protected $arrFiles = array();
-	
-	protected function connect()
+
+	public function connect()
 	{
 		// empty wrapper, will get filled in child classes. Return no connection handle
 		return NULL;
 	}
 
 	// empty wrapper, will get filled in child classes.
-	protected function disconnect()	{}
-
-	/**
-	 * Create the object and store the resource and finally make sure that the temp folder is writable
-	 */
-	protected function __construct($foo=0)
-	{
-		// Use FTP to modify files
-		$this->ftpHost = $GLOBALS['TL_CONFIG']['ftpHost'];
-		$this->ftpPort = $GLOBALS['TL_CONFIG']['ftpPort'];
-		$this->ftpUser = $GLOBALS['TL_CONFIG']['ftpUser'];
-		$this->ftpPass = $GLOBALS['TL_CONFIG']['ftpPass'];
-		$this->ftpPath = $GLOBALS['TL_CONFIG']['ftpPath'];
-		// Connect to server
-		if (!($resConnection = $this->connect()))
-		{
-			throw new Exception('Could not connect to ftp.');
-		}
-		$this->resConnection = $resConnection;
-		// security, clean user id and password as we won't need them anymore.
-		$this->ftpUser = NULL;
-		$this->ftpPass = NULL;
-		// Make folders writable
-		if (!is_writable(TL_ROOT . '/system/tmp'))
-		{
-			$this->chmod('system/tmp', 0777);
-		}
-		if (!is_writable(TL_ROOT . '/system/html'))
-		{
-			$this->chmod('system/html', 0777);
-		}
-		if (!is_writable(TL_ROOT . '/system/logs'))
-		{
-			$this->chmod('system/logs', 0777);
-		}
-	}
-
-	public function __destruct()
-	{
-		$this->disconnect();
-		unset($this->resConnection);
-	}
-
+	public function disconnect(){}
 
 ///////////////////////////////////////////////////
 // Interface routines used by the framework      //

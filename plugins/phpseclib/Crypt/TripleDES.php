@@ -47,7 +47,7 @@
  * @author     Jim Wigginton <terrafrost@php.net>
  * @copyright  MMVII Jim Wigginton
  * @license    http://www.gnu.org/licenses/lgpl.txt
- * @version    $Id: TripleDES.php,v 1.8 2009/06/09 04:00:38 terrafrost Exp $
+ * @version    $Id: TripleDES.php,v 1.11 2010/01/04 07:59:01 terrafrost Exp $
  * @link       http://phpseclib.sourceforge.net
  */
 
@@ -348,14 +348,16 @@ class Crypt_TripleDES {
         // "The data is padded with "\0" to make sure the length of the data is n * blocksize."
         $plaintext = str_pad($plaintext, ceil(strlen($plaintext) / 8) * 8, chr(0));
 
+        $des = $this->des;
+
         $ciphertext = '';
         switch ($this->mode) {
             case CRYPT_DES_MODE_ECB:
                 for ($i = 0; $i < strlen($plaintext); $i+=8) {
                     $block = substr($plaintext, $i, 8);
-                    $block = $this->des[0]->_processBlock($block, CRYPT_DES_ENCRYPT);
-                    $block = $this->des[1]->_processBlock($block, CRYPT_DES_DECRYPT);
-                    $block = $this->des[2]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[0]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[1]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[2]->_processBlock($block, CRYPT_DES_ENCRYPT);
                     $ciphertext.= $block;
                 }
                 break;
@@ -363,9 +365,9 @@ class Crypt_TripleDES {
                 $xor = $this->encryptIV;
                 for ($i = 0; $i < strlen($plaintext); $i+=8) {
                     $block = substr($plaintext, $i, 8) ^ $xor;
-                    $block = $this->des[0]->_processBlock($block, CRYPT_DES_ENCRYPT);
-                    $block = $this->des[1]->_processBlock($block, CRYPT_DES_DECRYPT);
-                    $block = $this->des[2]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[0]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[1]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[2]->_processBlock($block, CRYPT_DES_ENCRYPT);
                     $xor = $block;
                     $ciphertext.= $block;
                 }
@@ -417,14 +419,16 @@ class Crypt_TripleDES {
             return $this->_unpad($this->des[0]->decrypt($plaintext));
         }
 
+        $des = $this->des;
+
         $plaintext = '';
         switch ($this->mode) {
             case CRYPT_DES_MODE_ECB:
                 for ($i = 0; $i < strlen($ciphertext); $i+=8) {
                     $block = substr($ciphertext, $i, 8);
-                    $block = $this->des[2]->_processBlock($block, CRYPT_DES_DECRYPT);
-                    $block = $this->des[1]->_processBlock($block, CRYPT_DES_ENCRYPT);
-                    $block = $this->des[0]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[2]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[1]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[0]->_processBlock($block, CRYPT_DES_DECRYPT);
                     $plaintext.= $block;
                 }
                 break;
@@ -432,9 +436,9 @@ class Crypt_TripleDES {
                 $xor = $this->decryptIV;
                 for ($i = 0; $i < strlen($ciphertext); $i+=8) {
                     $orig = $block = substr($ciphertext, $i, 8);
-                    $block = $this->des[2]->_processBlock($block, CRYPT_DES_DECRYPT);
-                    $block = $this->des[1]->_processBlock($block, CRYPT_DES_ENCRYPT);
-                    $block = $this->des[0]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[2]->_processBlock($block, CRYPT_DES_DECRYPT);
+                    $block = $des[1]->_processBlock($block, CRYPT_DES_ENCRYPT);
+                    $block = $des[0]->_processBlock($block, CRYPT_DES_DECRYPT);
                     $plaintext.= $block ^ $xor;
                     $xor = $orig;
                 }
@@ -576,7 +580,8 @@ class Crypt_TripleDES {
     /**
      * Unpads a string
      *
-     * If padding is enabled and the reported padding length exceeds the block size, padding will be, hence forth, disabled.
+     * If padding is enabled and the reported padding length is invalid the encryption key will be assumed to be wrong
+     * and false will be returned.
      *
      * @see Crypt_TripleDES::_pad()
      * @access private
@@ -589,10 +594,8 @@ class Crypt_TripleDES {
 
         $length = ord($text[strlen($text) - 1]);
 
-        if ($length > 8) {
-            user_error("The number of bytes reported as being padded ($length) exceeds the block size (8)", E_USER_NOTICE);
-            $this->padding = false;
-            return $text;
+        if (!$length || $length > 8) {
+            return false;
         }
 
         return substr($text, 0, -$length);

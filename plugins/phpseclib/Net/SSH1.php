@@ -65,7 +65,7 @@
  * @author     Jim Wigginton <terrafrost@php.net>
  * @copyright  MMVII Jim Wigginton
  * @license    http://www.gnu.org/licenses/lgpl.txt
- * @version    $Id: SSH1.php,v 1.12 2009/06/09 04:00:38 terrafrost Exp $
+ * @version    $Id: SSH1.php,v 1.14 2009/12/03 08:18:53 terrafrost Exp $
  * @link       http://phpseclib.sourceforge.net
  */
 
@@ -440,7 +440,7 @@ class Net_SSH1 {
         $this->_string_shift($response[NET_SSH1_RESPONSE_DATA], 4);
 
         // get a list of the supported ciphers
-        list(, $supported_ciphers_mask) = unpack('N', $this->_string_shift($response[NET_SSH1_RESPONSE_DATA], 4));
+        extract(unpack('Nsupported_ciphers_mask', $this->_string_shift($response[NET_SSH1_RESPONSE_DATA], 4)));
         foreach ($this->supported_ciphers as $mask=>$name) {
             if (($supported_ciphers_mask & (1 << $mask)) == 0) {
                 unset($this->supported_ciphers[$mask]);
@@ -448,7 +448,7 @@ class Net_SSH1 {
         }
 
         // get a list of the supported authentications
-        list(, $supported_authentications_mask) = unpack('N', $this->_string_shift($response[NET_SSH1_RESPONSE_DATA], 4));
+        extract(unpack('Nsupported_authentications_mask', $this->_string_shift($response[NET_SSH1_RESPONSE_DATA], 4)));
         foreach ($this->supported_authentications as $mask=>$name) {
             if (($supported_authentications_mask & (1 << $mask)) == 0) {
                 unset($this->supported_authentications[$mask]);
@@ -638,7 +638,6 @@ class Net_SSH1 {
             return false;
         }
 
-
         $output = '';
         $response = $this->_get_binary_packet();
 
@@ -768,7 +767,6 @@ class Net_SSH1 {
      *
      * @access public
      */
-
     function disconnect()
     {
         $this->_disconnect();
@@ -1018,6 +1016,17 @@ class Net_SSH1 {
      */
     function _rsa_crypt($m, $key)
     {
+        /*
+        if (!class_exists('Crypt_RSA')) {
+            require_once('Crypt/RSA.php');
+        }
+
+        $rsa = new Crypt_RSA();
+        $rsa->loadKey($key, CRYPT_RSA_PUBLIC_FORMAT_RAW);
+        $rsa->setEncryptionMode(CRYPT_RSA_ENCRYPTION_PKCS1);
+        return $rsa->encrypt($m);
+        */
+
         // To quote from protocol-1.5.txt:
         // The most significant byte (which is only partial as the value must be
         // less than the public modulus, which is never a power of two) is zero.
