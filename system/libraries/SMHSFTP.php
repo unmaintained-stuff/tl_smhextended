@@ -57,20 +57,34 @@ class SMHSFTP extends SMHTransfer
 		$this->ftpHost = $GLOBALS['TL_CONFIG']['ftpHost'];
 		$this->ftpPort = $GLOBALS['TL_CONFIG']['ftpPort'];
 		$this->ftpUser = $GLOBALS['TL_CONFIG']['ftpUser'];
-		$this->ftpPass = $GLOBALS['TL_CONFIG']['ftpPass'];
+		if($GLOBALS['TL_CONFIG']['sftpKeyFile'])
+		{
+			$key = new Crypt_RSA();
+			if($GLOBALS['TL_CONFIG']['sftpKeyPass'])
+				$key->setPassword($GLOBALS['TL_CONFIG']['sftpKeyPass']);
+			$key->loadKey(file_get_contents($GLOBALS['TL_CONFIG']['sftpKeyFile']));
+			$this->ftpPass = $key;
+		}
+		else
+		{
+			$this->ftpPass = $GLOBALS['TL_CONFIG']['ftpPass'];
+		}
 		$this->ftpPath = $GLOBALS['TL_CONFIG']['ftpPath'];
 
 		// Connect to FTP server
 		if(!is_numeric($this->ftpPort) || $this->ftpPort==0)
 			$this->ftpPort = 22;
-		//define('NET_SSH2_LOGGING', true);
-		define('NET_SFTP_LOGGING', true);
+		if($GLOBALS['TL_CONFIG']['debugSmhExtended'])
+		{
+			define('NET_SSH2_LOGGING', true);
+			define('NET_SFTP_LOGGING', true);
+		}
 		if (($resConnection = new Net_SFTP($this->ftpHost, $this->ftpPort, 5)) != false)
 		{
 			// Login
 			if (!$resConnection->login($this->ftpUser, $this->ftpPass))
 			{
-				throw new Exception('Could not login to sftp: ' . $resConnection->getLog());
+				throw new Exception('Could not login to sftp: ' . $resConnection->getLastError() . (defined('NET_SSH2_LOGGING')?implode("\n", $resConnection->message_number_log):''));
 			}
 			// security, clean user id and password as we won't need them anymore.
 			$this->ftpUser = NULL;
@@ -81,7 +95,7 @@ class SMHSFTP extends SMHTransfer
 			$this->resConnection = $resConnection;
 			return $resConnection;
 		} else {
-			throw new Exception('Could not connect to sftp.');
+			throw new Exception('Could not connect to sftp: ' . $resConnection->getLastError());
 		}
 	}
 	
@@ -209,7 +223,10 @@ class SMHSFTP extends SMHTransfer
 			// we have to delete the target file if it exists as sftp does not support truncating of files, only appending.
 			if(file_exists(TL_ROOT . '/' . $strDestination))
 				$this->delete($strDestination);
-			$return = $this->resConnection->put($this->ftpPath . $strDestination, TL_ROOT . '/' . $strSource, NET_SFTP_LOCAL_FILE);
+			// NET_SFTP_LOCAL_FILE creates zero byte files under some circumstances, therefore we will not use it for the moment.
+			// Note that this will get very hungry on memory for large files.
+			// $return = $this->resConnection->put($this->ftpPath . $strDestination, TL_ROOT . '/' . $strSource, NET_SFTP_LOCAL_FILE);
+			$return = $this->resConnection->put($this->ftpPath . $strDestination, file_get_contents(TL_ROOT . '/' . $strSource));
 		} else {
 			// do we have to copy recurively in here?
 			$return = $this->mkdir($strDestination);
@@ -261,7 +278,10 @@ class SMHSFTP extends SMHTransfer
 	 */
 	public function move_uploaded_file($strSource, $strDestination)
 	{
-		return $this->resConnection->put($this->ftpPath . $strDestination, $strSource, NET_SFTP_LOCAL_FILE);
+		// NET_SFTP_LOCAL_FILE creates zero byte files under some circumstances, therefore we will not use it for the moment.
+		// Note that this will get very hungry on memory for large files.
+		// return $this->resConnection->put($this->ftpPath . $strDestination, $strSource, NET_SFTP_LOCAL_FILE);
+		return $this->resConnection->put($this->ftpPath . $strDestination, file_get_contents($strSource));
 	}
 }
 
