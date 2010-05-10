@@ -50,8 +50,10 @@ class SMHSFTP extends SMHTransfer
 	{
 		// we have to mangle the include path a little to find our plugins
 		$oldIncludePath=get_include_path();
-		set_include_path($oldIncludePath . ':' . TL_ROOT . '/plugins/phpseclib/:' . TL_ROOT . '/plugins/phpseclib/Net');
+		set_include_path($oldIncludePath . ':' . TL_ROOT . '/plugins/phpseclib/:' . TL_ROOT . '/plugins/phpseclib/Net:' . TL_ROOT . '/plugins/phpseclib/Crypt');
 		include('SFTP.php');
+		if($GLOBALS['TL_CONFIG']['sftpKeyFile'])
+			include('RSA.php');
 		set_include_path($oldIncludePath);
 
 		$this->ftpHost = $GLOBALS['TL_CONFIG']['ftpHost'];
