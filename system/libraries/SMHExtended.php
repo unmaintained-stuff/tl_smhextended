@@ -35,11 +35,32 @@ class SMHExtended extends Files
 	 */
 	protected $objConnection=NULL;
 
+	/**
+	 * Create the connection object and store it, finally make sure that the temp folders are writable
+	 */
 	protected function connect()
 	{
+		if($this->objConnection)
+			return $this->objConnection;
 		$objConnection = new $GLOBALS['TL_CONFIG']['useSMHClass']();
+		// Connect to server
 		if($objConnection->connect())
 			$this->objConnection = $objConnection;
+		else
+			throw new Exception('SMHExtended could not connect to server.');
+		// Make folders writable
+		if (!is_writable(TL_ROOT . '/system/tmp'))
+		{
+			$this->chmod('system/tmp', 0777);
+		}
+		if (!is_writable(TL_ROOT . '/system/html'))
+		{
+			$this->chmod('system/html', 0777);
+		}
+		if (!is_writable(TL_ROOT . '/system/logs'))
+		{
+			$this->chmod('system/logs', 0777);
+		}
 		return $objConnection;
 	}
 
@@ -54,24 +75,7 @@ class SMHExtended extends Files
 	 */
 	protected function __construct()
 	{
-		// Connect to server
-		if (!$this->connect())
-		{
-			throw new Exception('SMHExtended could not connect to server.');
-		}
-		// Make folders writable
-		if (!is_writable(TL_ROOT . '/system/tmp'))
-		{
-			$this->chmod('system/tmp', 0777);
-		}
-		if (!is_writable(TL_ROOT . '/system/html'))
-		{
-			$this->chmod('system/html', 0777);
-		}
-		if (!is_writable(TL_ROOT . '/system/logs'))
-		{
-			$this->chmod('system/logs', 0777);
-		}
+		// nothing to do anymore due to lazy initialization.
 	}
 
 	public function __destruct()
@@ -92,6 +96,7 @@ class SMHExtended extends Files
 	 */
 	public function mkdir($strDirectory)
 	{
+		$this->connect();
 		$this->objConnection->mkdir($strDirectory);
 	}
 
@@ -102,6 +107,7 @@ class SMHExtended extends Files
 	 */
 	public function rmdir($strDirectory)
 	{
+		$this->connect();
 		return $this->objConnection->rmdir($strDirectory);
 	}
 
@@ -114,6 +120,7 @@ class SMHExtended extends Files
 	 */
 	public function fopen($strFile, $strMode)
 	{
+		$this->connect();
 		return $this->objConnection->fopen($strFile, $strMode);
 	}
 
@@ -124,6 +131,7 @@ class SMHExtended extends Files
 	 */
 	public function fclose($resFile)
 	{
+		$this->connect();
 		return $this->objConnection->fclose($resFile);
 	}
 
@@ -135,6 +143,7 @@ class SMHExtended extends Files
 	 */
 	public function rename($strOldName, $strNewName)
 	{
+		$this->connect();
 		return $this->objConnection->rename($strOldName, $strNewName);
 	}
 
@@ -146,6 +155,7 @@ class SMHExtended extends Files
 	 */
 	public function copy($strSource, $strDestination)
 	{
+		$this->connect();
 		return $this->objConnection->copy($strSource, $strDestination);
 	}
 
@@ -156,6 +166,7 @@ class SMHExtended extends Files
 	 */
 	public function delete($strFile)
 	{
+		$this->connect();
 		return $this->objConnection->delete($strFile);
 	}
 
@@ -167,6 +178,7 @@ class SMHExtended extends Files
 	 */
 	public function chmod($strFile, $varMode)
 	{
+		$this->connect();
 		return $this->objConnection->chmod($strFile, $varMode);
 	}
 
@@ -177,6 +189,7 @@ class SMHExtended extends Files
 	 */
 	public function is_writeable($strFile)
 	{
+		$this->connect();
 		return $this->objConnection->is_writeable($strFile);
 	}
 
@@ -188,6 +201,7 @@ class SMHExtended extends Files
 	 */
 	public function move_uploaded_file($strSource, $strDestination)
 	{
+		$this->connect();
 		return $this->objConnection->move_uploaded_file($strSource, $strDestination);
 	}
 }
